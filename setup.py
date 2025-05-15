@@ -158,4 +158,9 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.11',
     ],
+    entry_points={
+        'lms.djangoapp': [
+            'futurex_ecommerce = futurex_ecommerce.apps:FuturexEcommerceConfig',
+        ],
+    },
 )

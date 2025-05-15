@@ -1,0 +1,14 @@
+PRODUCT_TYPE_COURSE = 'course'
+PRODUCT_TYPE_CHOICES = [
+    (PRODUCT_TYPE_COURSE, 'Course'),
+]
+
+CART_STATE_OPEN = 'open'
+CART_STATE_LOCKED = 'locked'
+CART_STATE_SUBMITTED = 'submitted'
+
+CART_STATE_CHOICES = [
+    (CART_STATE_OPEN, 'Open'),
+    (CART_STATE_LOCKED, 'Locked'),
+    (CART_STATE_SUBMITTED, 'Submitted'),
+]

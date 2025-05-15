@@ -1,10 +1,9 @@
-"""
-URLs for futurex_ecommerce.
-"""
-from django.urls import re_path  # pylint: disable=unused-import
-from django.views.generic import TemplateView  # pylint: disable=unused-import
+from django.urls import re_path, include
+from rest_framework.routers import DefaultRouter
+from futurex_ecommerce import views
 
-urlpatterns = [  # type: ignore
-    # TODO: Fill in URL patterns and views here.
-    # re_path(r'', TemplateView.as_view(template_name="futurex_ecommerce/base.html")),
+router = DefaultRouter()
+
+urlpatterns = [
+    re_path(r'^api/fx/cart/v1/add/$', views.CartView.as_view(), name='cart_add'),
 ]
