@@ -1,0 +1,88 @@
+{% extends "main_django.html" %}
+{% load i18n configuration %}
+{% load static %}
+
+{% block body %}
+<link rel="stylesheet" href="https://srei.ecommerce.futurex.sa/static/CACHE/css/main.643ebe9aca4b.css" type="text/css">
+
+<div class="basket" dir="rtl">
+   <div class="container">
+      <div id="messages"></div>
+      <div id="content-inner">
+            {% csrf_token %}
+            {{ formset.management_form }}
+               {% if cart and cart.items %}
+                  <form action="." method="post">
+                     <div class="basket-items">
+                        <p class="certificate_type">{% trans "Get a certificate to document your skills" %}</p>
+                        {% for item in cart.items %}
+                        <div class="row mb-4" style="display: flex; flex-wrap: wrap; justify-content: space-between;">
+                           <div class="course-info" style="flex: 0 0 48%; /* roughly half width */">
+                              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                 <p class="product-title" style="margin: 0;">
+                                    {{ item.sku }} ({{ item.type }})
+                                 </p>
+                                 <p class="price" style="margin: 0;">
+                                    {{ item.final_price }} {{ item.currency }}
+                                 </p>
+                              </div>
+                              <ul style="width:800px">
+                              {% for course in item.courses %}
+                              <li style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                                 <p style="margin: 0;">{{ course.course_name }}</p>
+                                 <img height="150" width="300" class="course-image" src="{{ course.course_image }}" alt="{{ course.course_name }}" />
+                              </li>
+                              {% endfor %}
+                              </ul>
+                           </div>
+                        </div>
+                        {% endfor %}
+                     </div>
+                  </form>
+
+                  <div class="total">
+                     <div class="row">
+                        <div class="use-voucher col-sm-7 col-xs-8 pull-right">
+                           <p id="voucher_form_link">
+                              <a href="#voucher">{% trans "Apply voucher code" %}</a>
+                           </p>
+                           <div id="voucher_form_container" class="voucher_form">
+                              <form id="voucher_form" action="/basket/vouchers/add/" method="post">
+                                 {% csrf_token %}
+                                 <div class="code">
+                                    <input id="id_code" name="code" type="text">
+                                    <button type="submit" id="apply-voucher-button" class="btn btn-default">
+                                       {% trans "Apply" %}
+                                    </button>
+                                 </div>
+                              </form>
+                           </div>
+                        </div>
+                        <div id="basket_totals" class="col-xs-4 pull-left">
+                           {% blocktrans %}Total: {{ cart.total_price }} SAR{% endblocktrans %}
+                        </div>
+                     </div>
+                  </div>
+               {% else %}
+                  <p>No cart exists.</p>
+               {% endif %}
+
+         <div class="row">
+            <div class="col-sm-12">
+               <div class="pull-left payment-buttons">
+                  {% for method in methods %}
+                     <a 
+                        href="{{ method.url }}"
+                        class="btn payment-button pay-btn-{{ method.slug }}"
+                        data-slug="{{ method.slug }}" 
+                        data-title="{{ method.title }}">
+                        {{ method.checkout_text }}
+                     </a>
+                  {% endfor %}
+               </div>
+            </div>
+         </div>
+      </div>
+   </div>
+</div>
+{% endblock %}
