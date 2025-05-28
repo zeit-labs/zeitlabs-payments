@@ -76,6 +76,20 @@ def get_merchant_reference(site_id: int, cart: Cart) -> str:
     return f'{site_id}-{cart.id}'
 
 
+def get_course_id(item: CartItem) -> Optional[str]:
+    """Return the course ID."""
+    if item.catalogue_item.type == CatalogueItem.ItemType.PAID_COURSE:
+        try:
+            course = CourseOverview.objects.get(id=item.catalogue_item.item_ref_id)
+        except Exception:
+            raise PayFortException(
+                f'Unable to get course from catalogue item of type "{CatalogueItem.ItemType.PAID_COURSE}" '
+                f'and ref_id: "{item.catalogue_item.item_ref_id}".'
+            )
+        return str(course.id)
+    return PayFortException(f'Catalogue Item type: "{item.catalogue_item.type}" not supported.')
+
+
 def get_order_description(cart: Cart) -> str:
     """
     Return the order description for the given cart.
@@ -84,22 +98,9 @@ def get_order_description(cart: Cart) -> str:
     :return: The order description.
     """
 
-    def _get_course_id(item: CartItem) -> Optional[str]:
-        """Return the course ID."""
-        if item.catalogue_item.type == CatalogueItem.ItemType.PAID_COURSE:
-            try:
-                course = CourseOverview.objects.get(id=item.catalogue_item.item_ref_id)
-            except Exception:
-                raise PayFortException(
-                    f'Unable to get course from catalogue item of type "{CatalogueItem.ItemType.PAID_COURSE}" '
-                    f'and ref_id: "{item.catalogue_item.item_ref_id}".'
-                )
-            return str(course.id)
-        return None
-
     def _get_product_description(item: CartItem) -> str:
         """Return the product description."""
-        result = _get_course_id(item)
+        result = get_course_id(item)
         return result or '-'
 
     verify_param(cart, 'cart', Cart)
@@ -176,10 +177,7 @@ def verify_response_format(response_data: Dict[str, Any]) -> None:
     if response_data['command'] != 'PURCHASE':
         raise PayFortException(f'Invalid command in response: {response_data["command"]}')
 
-    if re.fullmatch(
-        r'^\d+-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
-        response_data['merchant_reference'],
-    ) is None:
+    if re.fullmatch(r'^\d+-\d+$', response_data['merchant_reference']) is None:
         raise PayFortException(
             f'Invalid merchant_reference in response: {response_data["merchant_reference"]}'
         )

@@ -13,4 +13,4 @@ def get_processor(slug: str):
     try:
         return PROCESSORS[slug]()
     except KeyError:
-        raise ValueError(f"Unsupported payment provider: {slug!r}")
+        raise ValueError(f"Unsupported payment provider: {slug}")

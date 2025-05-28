@@ -6,13 +6,12 @@ User = get_user_model()
 
 
 class Transaction(models.Model):
-    class Type(models.TextChoices):
+    class TransactionType(models.TextChoices):
         PAYMENT = "payment"
         REFUND = "refund"
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     cart = models.ForeignKey("Cart", on_delete=models.CASCADE, related_name="transactions")
-    type = models.CharField(max_length=20, choices=Type.choices)
+    type = models.CharField(max_length=20, choices=TransactionType.choices)
     status = models.CharField(max_length=50)
     gateway = models.CharField(max_length=50)
     gateway_transaction_id = models.CharField(max_length=255)
@@ -28,7 +27,6 @@ class Transaction(models.Model):
 
 
 class WebhookEvent(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     gateway = models.CharField(max_length=50)
     event_type = models.CharField(max_length=100)
     payload = models.JSONField()
@@ -38,7 +36,6 @@ class WebhookEvent(models.Model):
 
 
 class AuditLog(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     action = models.CharField(max_length=255)
     gateway = models.CharField(max_length=50, blank=True, null=True)
@@ -55,7 +52,6 @@ class Cart(models.Model):
         REFUND_REQUESTED = "refund_requested"
         REFUNDED = "refunded"
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="carts")
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -80,7 +76,6 @@ class Coupon(models.Model):
 
 
 class CouponUsage(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE, related_name="usages")
     count = models.PositiveIntegerField(default=1)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -92,7 +87,6 @@ class CatalogueItem(models.Model):
         PAID_COURSE = "paid_course"
         # TODO add other types here like 'section_of_course', 'fremium_course', etc.
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     sku = models.CharField(max_length=255)
     type = models.CharField(max_length=20, choices=ItemType.choices)
     item_ref_id = models.CharField(max_length=255)
@@ -102,7 +96,6 @@ class CatalogueItem(models.Model):
 
 
 class CartItem(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")
     catalogue_item = models.ForeignKey(CatalogueItem, on_delete=models.PROTECT)
     original_price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -117,7 +110,6 @@ class Invoice(models.Model):
         PAID = "paid"
         CANCELLED = "cancelled"
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="invoices")
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     total = models.DecimalField(max_digits=10, decimal_places=2)
@@ -128,7 +120,6 @@ class Invoice(models.Model):
 
 
 class InvoiceItem(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="items")
     cart_item = models.ForeignKey(CartItem, on_delete=models.SET_NULL, null=True)
     original_price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -138,7 +129,6 @@ class InvoiceItem(models.Model):
 
 
 class CreditMemo(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="credit_memos")
     total = models.DecimalField(max_digits=10, decimal_places=2)
     reason = models.TextField()

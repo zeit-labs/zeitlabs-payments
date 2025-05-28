@@ -1,35 +1,43 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Transaction Error</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f5f5f5;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .message-box {
-            background: #fff;
-            padding: 2rem 3rem;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            text-align: center;
-            border-radius: 8px;
-        }
-        .message-box h1 {
-            color: #d9534f;
-            margin-bottom: 1rem;
-        }
-    </style>
-</head>
-<body>
-    <div class="message-box">
-        <h1>Something went wrong.</h1>
-        <p>We were unable to process your transaction at this time. Please try again later.</p>
-    </div>
-</body>
-</html>
+{% extends "main.html" %}
+{% load i18n %}
+
+{% block body %}
+<style>
+    .message-box {
+        font-family: Arial, sans-serif;
+        background: #fff;
+        padding: 2rem 3rem;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        text-align: center;
+        border-radius: 8px;
+        max-width: 600px;
+        margin: 10vh auto;
+    }
+    .message-box h1 {
+        color: #d9534f;
+        margin-bottom: 1rem;
+    }
+    .message-box p {
+        margin-bottom: 1rem;
+    }
+    .message-box a {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        background-color: #d9534f;
+        color: #fff;
+        text-decoration: none;
+        border-radius: 4px;
+        margin-top: 1rem;
+    }
+    .message-box a:hover {
+        background-color: #c9302c;
+    }
+</style>
+
+<div class="message-box">
+    <h1>{% trans "Something went wrong" %}</h1>
+    <p>{% trans "We couldn’t process your transaction at this time." %}</p>
+    <p>{% trans "Please try again later. If the issue persists, contact our support team." %}</p>
+    <a href="/contact-support">{% trans "Contact Support" %}</a>
+</div>
+{% endblock %}

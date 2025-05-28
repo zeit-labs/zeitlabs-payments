@@ -82,7 +82,7 @@ class PayfortCallbackView(APIView):
 
                     transaction_record = Transaction.objects.create(
                         cart=cart,
-                        type=Transaction.Type.PAYMENT,
+                        type=Transaction.TransactionType.PAYMENT,
                         status=data.get('response_message', 'unknown'),
                         gateway='payfort',
                         gateway_transaction_id=data.get('fort_id'),
