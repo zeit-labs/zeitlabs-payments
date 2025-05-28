@@ -2,7 +2,7 @@ from typing import Optional, Any, List
 from rest_framework import serializers
 from .models import Cart, CartItem, CatalogueItem
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-from zeitlabs_payments.utils import relative_url_to_absolute_url
+from zeitlabs_payments.helpers import relative_url_to_absolute_url
 import logging
 
 logger = logging.getLogger(__name__)
@@ -106,12 +106,15 @@ class CartItemSerializer(serializers.ModelSerializer):
         courses = []
         if obj.catalogue_item.type == CatalogueItem.ItemType.PAID_COURSE:
             try:
-                course = CourseOverview.objects.get(id=obj.catalogue_item.item_ref_id)
-                courses = [course]
+                courses = [CourseOverview.objects.get(id=obj.catalogue_item.item_ref_id)]
+                return CourseSerializer(instance=courses, many=True, context=self.context).data
             except CourseOverview.DoesNotExist:
                 logger.warning(f'CourseOverview not found for id {obj.catalogue_item.item_ref_id}')
-                courses = []
-        return CourseSerializer(instance=courses, many=True, context=self.context).data
+                raise Exception(
+                    f'Catalogue item of type: {CatalogueItem.ItemType.PAID_COURSE:} must be linked with course_id.'
+                )
+        else:
+            raise Exception('Unsupported catalogue item type.')
 
 
 class CartSerializer(serializers.ModelSerializer):

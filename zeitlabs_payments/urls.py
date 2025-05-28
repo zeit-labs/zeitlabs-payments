@@ -5,6 +5,9 @@ from django.urls import re_path
 from zeitlabs_payments import views
 from zeitlabs_payments.providers.payfort import views as payfort_views
 
+app_name = 'zeitlabs_payments'
+
+
 urlpatterns: list = [
     re_path(
         r'^checkout/v1/checkout/$',
@@ -22,8 +25,8 @@ urlpatterns: list = [
 
     # provider urls
     re_path(
-        r'^api/payment/v1/payfort/callback/$',
-        payfort_views.PayfortCallbackView.as_view(),
-        name='payfort-callback'
+        r'^payment/v1/payfort/feedback/$',
+        payfort_views.PayfortFeedbackView.as_view(),
+        name='payfort-feedback'
     ),
 ]

@@ -35,7 +35,7 @@ def get_language(request: Optional[Any]) -> str:
     :return: The language code, either 'en' or 'ar', defaults to 'en'.
     :rtype: str
     """
-    if request is None or not hasattr(request, 'LANGUAGE_CODE'):
+    if request is None or not hasattr(request, 'LANGUAGE_CODE') or not request.LANGUAGE_CODE:
         return 'en'
     result = request.LANGUAGE_CODE.split('-')[0].lower()
     return result if result in ('en', 'ar') else 'en'

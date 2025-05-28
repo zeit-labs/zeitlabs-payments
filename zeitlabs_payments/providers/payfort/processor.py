@@ -10,7 +10,7 @@ from django.shortcuts import render
 from django.http import HttpRequest, HttpResponse
 
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-from zeitlabs_payments.utils import get_currency, get_language
+from zeitlabs_payments.helpers import get_currency, get_language
 from zeitlabs_payments.providers.base import BaseProcessor
 from .helpers import get_order_description, get_merchant_reference, get_customer_name, get_signature
 
@@ -37,7 +37,7 @@ class PayFort(BaseProcessor):
         self.redirect_url = settings.PAYFORT['redirect_url']
         self.return_url = urljoin(
             configuration_helpers.get_value('LMS_URL', settings.BASE_URL),
-            reverse('zeitlabs_payments:payfort-callback')
+            reverse('zeitlabs_payments:payfort-feedback')
         )
 
     @classmethod
