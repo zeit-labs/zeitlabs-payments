@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional, Union
 
 from zeitlabs_payments.providers.payfort.exceptions import PayFortBadSignatureException, PayFortException
 from zeitlabs_payments.models import Cart, CartItem, CatalogueItem
-from zeitlabs_payments.utils import sanitize_text, VALID_CURRENCY
+from zeitlabs_payments.helpers import sanitize_text, VALID_CURRENCY
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 
 
@@ -21,8 +21,8 @@ MANDATORY_RESPONSE_FIELDS = [
 MAX_ORDER_DESCRIPTION_LENGTH = 150
 SUCCESS_STATUS = '14'
 VALID_PATTERNS = {
-    "order_description": r"[^A-Za-z0-9 '/\._\-#:$]",
-    "customer_name": r"[^A-Za-z _\\/\-\.']",
+    'order_description': r"[^A-Za-z0-9 '/\._\-#:$]",
+    'customer_name': r"[^A-Za-z _\\/\-\.']",
 }
 SUPPORTED_SHA_METHODS = {
     'SHA-256': hashlib.sha256,
@@ -87,7 +87,7 @@ def get_course_id(item: CartItem) -> Optional[str]:
                 f'and ref_id: "{item.catalogue_item.item_ref_id}".'
             )
         return str(course.id)
-    return PayFortException(f'Catalogue Item type: "{item.catalogue_item.type}" not supported.')
+    raise PayFortException(f'Catalogue Item type: "{item.catalogue_item.type}" not supported.')
 
 
 def get_order_description(cart: Cart) -> str:

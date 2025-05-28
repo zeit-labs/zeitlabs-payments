@@ -7,10 +7,10 @@ User = get_user_model()
 
 class Transaction(models.Model):
     class TransactionType(models.TextChoices):
-        PAYMENT = "payment"
-        REFUND = "refund"
+        PAYMENT = 'payment'
+        REFUND = 'refund'
 
-    cart = models.ForeignKey("Cart", on_delete=models.CASCADE, related_name="transactions")
+    cart = models.ForeignKey('Cart', on_delete=models.CASCADE, related_name='transactions')
     type = models.CharField(max_length=20, choices=TransactionType.choices)
     status = models.CharField(max_length=50)
     gateway = models.CharField(max_length=50)
@@ -45,14 +45,14 @@ class AuditLog(models.Model):
 
 class Cart(models.Model):
     class Status(models.TextChoices):
-        PENDING = "pending"
-        PROCESSING = "processing"
-        PAID = "paid"
-        CANCELLED = "cancelled"
-        REFUND_REQUESTED = "refund_requested"
-        REFUNDED = "refunded"
+        PENDING = 'pending'
+        PROCESSING = 'processing'
+        PAID = 'paid'
+        CANCELLED = 'cancelled'
+        REFUND_REQUESTED = 'refund_requested'
+        REFUNDED = 'refunded'
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="carts")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='carts')
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -63,8 +63,8 @@ class Cart(models.Model):
 
 class Coupon(models.Model):
     class DiscountType(models.TextChoices):
-        FIXED = "fixed"
-        PERCENTAGE = "percentage"
+        FIXED = 'fixed'
+        PERCENTAGE = 'percentage'
 
     code = models.CharField(max_length=50, primary_key=True)
     discount_type = models.CharField(max_length=20, choices=DiscountType.choices)
@@ -76,7 +76,7 @@ class Coupon(models.Model):
 
 
 class CouponUsage(models.Model):
-    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE, related_name="usages")
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE, related_name='usages')
     count = models.PositiveIntegerField(default=1)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -84,7 +84,7 @@ class CouponUsage(models.Model):
 
 class CatalogueItem(models.Model):
     class ItemType(models.TextChoices):
-        PAID_COURSE = "paid_course"
+        PAID_COURSE = 'paid_course'
         # TODO add other types here like 'section_of_course', 'fremium_course', etc.
 
     sku = models.CharField(max_length=255)
@@ -96,7 +96,7 @@ class CatalogueItem(models.Model):
 
 
 class CartItem(models.Model):
-    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
     catalogue_item = models.ForeignKey(CatalogueItem, on_delete=models.PROTECT)
     original_price = models.DecimalField(max_digits=10, decimal_places=2)
     discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -106,11 +106,11 @@ class CartItem(models.Model):
 
 class Invoice(models.Model):
     class Status(models.TextChoices):
-        DRAFT = "draft"
-        PAID = "paid"
-        CANCELLED = "cancelled"
+        DRAFT = 'draft'
+        PAID = 'paid'
+        CANCELLED = 'cancelled'
 
-    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="invoices")
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='invoices')
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     total = models.DecimalField(max_digits=10, decimal_places=2)
     discount_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -120,7 +120,7 @@ class Invoice(models.Model):
 
 
 class InvoiceItem(models.Model):
-    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="items")
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='items')
     cart_item = models.ForeignKey(CartItem, on_delete=models.SET_NULL, null=True)
     original_price = models.DecimalField(max_digits=10, decimal_places=2)
     discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -129,7 +129,7 @@ class InvoiceItem(models.Model):
 
 
 class CreditMemo(models.Model):
-    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="credit_memos")
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='credit_memos')
     total = models.DecimalField(max_digits=10, decimal_places=2)
     reason = models.TextField()
     gateway_refund_transaction_id = models.CharField(max_length=255)
