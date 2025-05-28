@@ -1,0 +1,35 @@
+{% extends "main_django.html" %}
+{% load i18n configuration %}
+{% load static %}
+
+{% block body %}
+<style>
+    .payment-success {
+        font-family: Arial, sans-serif;
+        background: #f5f5f5;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+    .message-box {
+        background: #fff;
+        padding: 2rem 3rem;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        text-align: center;
+        border-radius: 8px;
+    }
+    .message-box h1 {
+        color: green;
+        margin-bottom: 1rem;
+    }
+</style>
+
+<div class="payment-success">
+    <div class="message-box">
+        <h1>{% trans "Your payment was successful." %}</h1>
+        <p>{% trans "Thank you for your purchase!" %}</p>
+    </div>
+</div>
+{% endblock %}

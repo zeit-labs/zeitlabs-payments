@@ -1,0 +1,37 @@
+{% extends "main_django.html" %}
+{% load i18n configuration static %}
+
+{% block body %}
+<link rel="stylesheet" href="https://srei.ecommerce.futurex.sa/static/CACHE/css/main.643ebe9aca4b.css" type="text/css">
+<style>
+    .centered-content {
+        text-align: center;
+        margin-top: 2em;
+    }
+</style>
+
+<div class="centered-content">
+    <h1>{% trans "Redirecting to the Payment Gateway..." %}</h1>
+</div>
+
+<form action="{{ transaction_parameters.payment_page_url}}" method="post" name="payment_form">
+    <input type="hidden" name="command" value="{{ transaction_parameters.command }}">
+    <input type="hidden" name="access_code" value="{{ transaction_parameters.access_code }}">
+    <input type="hidden" name="merchant_identifier" value="{{ transaction_parameters.merchant_identifier }}">
+    <input type="hidden" name="merchant_reference" value="{{ transaction_parameters.merchant_reference }}">
+    <input type="hidden" name="amount" value="{{ transaction_parameters.amount }}">
+    <input type="hidden" name="currency" value="{{ transaction_parameters.currency }}">
+    <input type="hidden" name="language" value="{{ transaction_parameters.language }}">
+    <input type="hidden" name="customer_email" value="{{ transaction_parameters.customer_email }}">
+    <input type="hidden" name="order_description" value="{{ transaction_parameters.order_description }}">
+    <input type="hidden" name="signature" value="{{ transaction_parameters.signature }}">
+    <input type="hidden" name="customer_name" value="{{ transaction_parameters.customer_name }}">
+    <input type="hidden" name="return_url" value="{{ transaction_parameters.return_url }}">
+</form>
+
+<script type="text/javascript">
+    window.onload = function() {
+        document.payment_form.submit();
+    };
+</script>
+{% endblock %}
