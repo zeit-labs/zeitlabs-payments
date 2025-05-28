@@ -2,8 +2,12 @@
 URLs for zeitlabs_payments.
 """
 from django.urls import re_path
+
 from zeitlabs_payments import views
 from zeitlabs_payments.providers.payfort import views as payfort_views
+
+app_name = 'zeitlabs_payments'
+
 
 urlpatterns: list = [
     re_path(
@@ -12,7 +16,7 @@ urlpatterns: list = [
         name='checkout'
     ),
     re_path(
-        r'^payment/v1/initiate/(?P<provider>[\w-]+)/(?P<cart_uuid>[0-9a-f-]+)/$',
+        r'^payment/v1/initiate/(?P<provider>[\w-]+)/(?P<cart_id>[0-9a-f-]+)/$',
         views.InitiatePaymentView.as_view(),
         name='initiate-payment'
     ),
@@ -22,8 +26,8 @@ urlpatterns: list = [
 
     # provider urls
     re_path(
-        r'^api/payment/v1/payfort/callback/$',
-        payfort_views.PayfortCallbackView.as_view(),
-        name='payfort-callback'
+        r'^payment/v1/payfort/feedback/$',
+        payfort_views.PayfortFeedbackView.as_view(),
+        name='payfort-feedback'
     ),
 ]

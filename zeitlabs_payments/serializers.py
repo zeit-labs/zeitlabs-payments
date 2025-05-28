@@ -1,14 +1,19 @@
-from typing import Optional, Any, List
-from rest_framework import serializers
-from .models import Cart, CartItem, CatalogueItem
-from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-from zeitlabs_payments.utils import relative_url_to_absolute_url
+"""zeitlabs payments serializers."""
 import logging
+from typing import Any, List, Optional
+
+from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
+from rest_framework import serializers
+
+from zeitlabs_payments.helpers import relative_url_to_absolute_url
+from zeitlabs_payments.models import Cart, CartItem, CatalogueItem
 
 logger = logging.getLogger(__name__)
 
 
 class CourseSerializer(serializers.ModelSerializer):
+    """Course serializer."""
+
     course_name = serializers.SerializerMethodField()
     course_id = serializers.SerializerMethodField()
     course_image = serializers.SerializerMethodField()
@@ -45,12 +50,14 @@ class CourseSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         try:
             return relative_url_to_absolute_url(obj.course_image_url, request)
-        except Exception as exc:
+        except (AttributeError, TypeError, ValueError) as exc:
             logger.error(f'Failed to get course image URL: {exc}')
             return None
 
 
 class CartItemSerializer(serializers.ModelSerializer):
+    """Cart Item serializer."""
+
     sku = serializers.SerializerMethodField()
     type = serializers.SerializerMethodField()
     currency = serializers.SerializerMethodField()
@@ -106,15 +113,20 @@ class CartItemSerializer(serializers.ModelSerializer):
         courses = []
         if obj.catalogue_item.type == CatalogueItem.ItemType.PAID_COURSE:
             try:
-                course = CourseOverview.objects.get(id=obj.catalogue_item.item_ref_id)
-                courses = [course]
-            except CourseOverview.DoesNotExist:
+                courses = [CourseOverview.objects.get(id=obj.catalogue_item.item_ref_id)]
+                return CourseSerializer(instance=courses, many=True, context=self.context).data
+            except CourseOverview.DoesNotExist as exc:
                 logger.warning(f'CourseOverview not found for id {obj.catalogue_item.item_ref_id}')
-                courses = []
-        return CourseSerializer(instance=courses, many=True, context=self.context).data
+                raise Exception(
+                    f'Catalogue item of type: {CatalogueItem.ItemType.PAID_COURSE:} must be linked with course_id.'
+                ) from exc
+        else:
+            raise Exception('Unsupported catalogue item type.')
 
 
 class CartSerializer(serializers.ModelSerializer):
+    """Cart serializer."""
+
     items = serializers.SerializerMethodField()
 
     class Meta:

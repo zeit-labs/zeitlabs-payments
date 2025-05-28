@@ -1,3 +1,4 @@
+"""Payfort provider exceptions"""
 from zeitlabs_payments.exceptions import GatewayError
 
 

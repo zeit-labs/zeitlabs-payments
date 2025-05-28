@@ -1,20 +1,21 @@
+"""Zeilabs payments views."""
 import logging
+from typing import Any
 
+from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import TemplateView
-from django.views import View
 from django.http import HttpResponseBadRequest
 from django.utils.decorators import method_decorator
+from django.views import View
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth import get_user_model
-
-from rest_framework.response import Response
-from rest_framework.views import APIView
+from django.views.generic import TemplateView
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from zeitlabs_payments.providers.registry import PROCESSORS, get_processor
 from zeitlabs_payments import models
+from zeitlabs_payments.providers.registry import PROCESSORS, get_processor
 from zeitlabs_payments.serializers import CartSerializer
 
 logger = logging.getLogger(__name__)
@@ -27,9 +28,10 @@ class CheckoutView(LoginRequiredMixin, TemplateView):
     This page is only accessible by authenticated users and provides a last pending cart
     along with available payment methods derived from registered processors.
     """
+
     template_name = 'zeitlabs_payments/checkout.html'
 
-    def get_context_data(self, **kwargs) -> dict:
+    def get_context_data(self, **kwargs: Any) -> dict:
         """
         Build and return the context data for the checkout page.
 
@@ -68,13 +70,13 @@ class InitiatePaymentView(LoginRequiredMixin, View):
     Only accessible by authenticated users.
     """
 
-    def get(self, request, provider: str, cart_uuid: str):
+    def get(self, request: Any, provider: str, cart_id: str) -> Any:
         """
         Initiate the payment by calling the appropriate processor.
 
         :param request: Django request object
         :param provider: The payment provider slug
-        :param cart_uuid: UUID of the cart
+        :param cart_id: UUID of the cart
         :return: Rendered payment page or error response
         """
         try:
@@ -85,9 +87,9 @@ class InitiatePaymentView(LoginRequiredMixin, View):
             return HttpResponseBadRequest(f'Error: {str(exc)}')
 
         try:
-            cart = models.Cart.objects.get(id=cart_uuid)
+            cart = models.Cart.objects.get(id=cart_id)
         except models.Cart.DoesNotExist as exc:
-            logger.error(f'Cart not found with id: {cart_uuid} - {exc}')
+            logger.error(f'Cart not found with id: {cart_id} - {exc}')
             return HttpResponseBadRequest(f'Error: {str(exc)}')
 
         if request.user != cart.user:
@@ -115,11 +117,12 @@ class CartView(APIView):
 
     Supports retrieving current cart and adding a SKU to the cart.
     """
+
     permission_classes = [IsAuthenticated]
 
-    def create_cart(self, user: get_user_model(), catalog_item: models.CatalogueItem) -> models.Cart:
+    def create_cart(self, user: get_user_model, catalog_item: models.CatalogueItem) -> models.Cart:
         """
-        create an open cart for the given user.
+        Create an open cart for the given user.
 
         :param user: User instance
         :param catalog_item: CatalogueItem instance to add to cart
@@ -141,7 +144,7 @@ class CartView(APIView):
         logger.info(f'Added catalogue item {catalog_item.sku} to cart {cart.id}')
         return cart
 
-    def get(self, request) -> Response:
+    def get(self, request: Any) -> Response:
         """
         Retrieve last cart with pending state.
 
@@ -156,7 +159,7 @@ class CartView(APIView):
         logger.debug(f'Retrieved last pending cart for user {request.user}: {last_pending_cart}')
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def post(self, request) -> Response:
+    def post(self, request: Any) -> Response:
         """
         Create a new cart and add the requested SKU item.
 

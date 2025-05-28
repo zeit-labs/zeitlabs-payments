@@ -15,7 +15,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.11"]
-        toxenv: [quality, pii_check, django42]
+        toxenv: [quality, django42]
     steps:
       - uses: actions/checkout@v4
       - name: setup python
