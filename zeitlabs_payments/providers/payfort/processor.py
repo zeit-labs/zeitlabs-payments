@@ -1,18 +1,22 @@
+"""Payfort processor"""
+
 import logging
-from typing import Optional, Any
+from typing import Any, Dict, Optional
 from urllib.parse import urljoin
 
 from django.conf import settings
+from django.http import HttpRequest, HttpResponse
 from django.middleware.csrf import get_token
+from django.shortcuts import render
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from django.shortcuts import render
-from django.http import HttpRequest, HttpResponse
-
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-from zeitlabs_payments.utils import get_currency, get_language
+
+from zeitlabs_payments.helpers import get_currency, get_language
+from zeitlabs_payments.models import Cart
 from zeitlabs_payments.providers.base import BaseProcessor
-from .helpers import get_order_description, get_merchant_reference, get_customer_name, get_signature
+
+from .helpers import get_merchant_reference, get_order_description, get_signature
 
 logger = logging.getLogger(__name__)
 
@@ -29,19 +33,19 @@ class PayFort(BaseProcessor):
 
     def __init__(self) -> None:
         """Initialize the PayFort processor."""
-        self.access_code = settings.PAYFORT['access_code']
-        self.merchant_identifier = settings.PAYFORT['merchant_identifier']
-        self.request_sha_phrase = settings.PAYFORT['request_sha_phrase']
-        self.response_sha_phrase = settings.PAYFORT['response_sha_phrase']
-        self.sha_method = settings.PAYFORT['sha_method']
-        self.redirect_url = settings.PAYFORT['redirect_url']
+        self.access_code = settings.PAYFORT_SETTINGS['access_code']
+        self.merchant_identifier = settings.PAYFORT_SETTINGS['merchant_identifier']
+        self.request_sha_phrase = settings.PAYFORT_SETTINGS['request_sha_phrase']
+        self.response_sha_phrase = settings.PAYFORT_SETTINGS['response_sha_phrase']
+        self.sha_method = settings.PAYFORT_SETTINGS['sha_method']
+        self.redirect_url = settings.PAYFORT_SETTINGS['redirect_url']
         self.return_url = urljoin(
-            configuration_helpers.get_value('LMS_URL', settings.BASE_URL),
-            reverse('zeitlabs_payments:payfort-callback')
+            configuration_helpers.get_value('LMS_URL', settings.ECOMMERCE_BASE_URL),
+            reverse('zeitlabs_payments:payfort-feedback')
         )
 
     @classmethod
-    def get_payment_method_metadata(cls, cart) -> dict:
+    def get_payment_method_metadata(cls, cart: Cart) -> dict:
         """
         Return metadata for frontend display for this payment processor.
         :return: Dictionary with 'slug', 'title', and 'url'
@@ -50,13 +54,13 @@ class PayFort(BaseProcessor):
             'slug': cls.SLUG,
             'title': cls.NAME,
             'checkout_text': cls.CHECKOUT_TEXT,
-            'url': reverse('zeitlabs_payments:initiate-payment', kwargs={'provider': cls.SLUG, 'cart_uuid': cart.id})
+            'url': reverse('zeitlabs_payments:initiate-payment', kwargs={'provider': cls.SLUG, 'cart_id': cart.id})
         }
 
     def get_transaction_parameters_base(
         self,
-        cart: dict,
-        request: Optional[HttpRequest] = None
+        cart: Cart,
+        request: HttpRequest
     ) -> dict:
         """
         Generate base parameters required for the transaction signature.
@@ -74,7 +78,7 @@ class PayFort(BaseProcessor):
             'return_url': self.return_url
         }
 
-    def generate_signature(self, params: dict = None) -> str:
+    def generate_signature(self, params: Dict[str, Any]) -> str:
         """
         Generate a signature for the transaction using provided or base parameters.
         """
@@ -86,7 +90,7 @@ class PayFort(BaseProcessor):
 
     def get_transaction_parameters(
         self,
-        cart: dict,
+        cart: Cart,
         request: Optional[HttpRequest] = None,
         use_client_side_checkout: bool = False,
         **kwargs: Any
@@ -111,7 +115,7 @@ class PayFort(BaseProcessor):
 
     def payment_view(
         self,
-        cart: dict,
+        cart: Cart,
         request: Optional[HttpRequest] = None,
         use_client_side_checkout: bool = False,
         **kwargs: Any

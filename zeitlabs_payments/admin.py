@@ -1,11 +1,7 @@
+"""Django admin view for the models."""
 from django.contrib import admin
-from .models import (
-    Cart,
-    CartItem,
-    CatalogueItem,
-    Transaction,
-    WebhookEvent
-)
+
+from .models import Cart, CartItem, CatalogueItem, Transaction, WebhookEvent
 
 
 @admin.register(Cart)
@@ -13,6 +9,7 @@ class CartAdmin(admin.ModelAdmin):
     """
     Admin configuration for the Cart model.
     """
+
     list_display = ('id', 'user', 'status', 'created_at')
     list_filter = ('status', 'created_at')
     search_fields = ('user__email', 'id')
@@ -23,6 +20,7 @@ class CartItemAdmin(admin.ModelAdmin):
     """
     Admin configuration for the CartItem model.
     """
+
     list_display = ('id', 'cart', 'catalogue_item', 'final_price', 'discount_amount')
     list_filter = ('cart__status',)
     search_fields = ('cart__id', 'catalogue_item__sku')
@@ -33,6 +31,7 @@ class CatalogueItemAdmin(admin.ModelAdmin):
     """
     Admin configuration for the CatalogueItem model.
     """
+
     list_display = ('id', 'sku', 'type', 'price', 'currency')
     list_filter = ('type',)
     search_fields = ('sku',)
@@ -40,6 +39,10 @@ class CatalogueItemAdmin(admin.ModelAdmin):
 
 @admin.register(Transaction)
 class TransactionAdmin(admin.ModelAdmin):
+    """
+    Admin configuration for the Transaction model.
+    """
+
     list_display = (
         'id',
         'cart',
@@ -61,6 +64,10 @@ class TransactionAdmin(admin.ModelAdmin):
 
 @admin.register(WebhookEvent)
 class WebhookEventAdmin(admin.ModelAdmin):
+    """
+    Admin configuration for the WebhookEvent model.
+    """
+
     list_display = (
         'id',
         'gateway',

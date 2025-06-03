@@ -1,12 +1,12 @@
-import hashlib
-import logging
-from typing import Optional, Any
+"""Base processor."""
 
-from django.conf import settings
-from django.middleware.csrf import get_token
-from django.utils.translation import gettext_lazy as _
-from django.shortcuts import render
+import logging
+from typing import Any, Optional
+
 from django.http import HttpRequest, HttpResponse
+from django.utils.translation import gettext_lazy as _
+
+from zeitlabs_payments.models import Cart
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class BaseProcessor:
 
     def payment_view(
         self,
-        cart: dict,
+        cart: Cart,
         request: Optional[HttpRequest] = None,
         use_client_side_checkout: bool = False,
         **kwargs: Any
@@ -39,7 +39,7 @@ class BaseProcessor:
 
     def get_transaction_parameters(
         self,
-        cart: dict,
+        cart: Cart,
         request: Optional[HttpRequest] = None,
         use_client_side_checkout: bool = False,
         **kwargs: Any
