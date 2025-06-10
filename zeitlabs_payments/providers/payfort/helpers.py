@@ -2,12 +2,9 @@
 
 import hashlib
 import re
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-
-from zeitlabs_payments.helpers import VALID_CURRENCY, sanitize_text
-from zeitlabs_payments.models import Cart, CartItem, CatalogueItem
+from zeitlabs_payments.helpers import VALID_CURRENCY, verify_param
 from zeitlabs_payments.providers.payfort.exceptions import PayFortBadSignatureException, PayFortException
 
 MANDATORY_RESPONSE_FIELDS = [
@@ -30,96 +27,6 @@ SUPPORTED_SHA_METHODS = {
     'SHA-256': hashlib.sha256,
     'SHA-512': hashlib.sha512,
 }
-
-
-def verify_param(param: Any, param_name: str, required_type: Any) -> None:
-    """
-    Verify a parameter type.
-
-    :param param: The parameter to verify.
-    :param param_name: The name of the parameter to be used in the exception message.
-    :param required_type: The required type of the parameter.
-    :raises PayFortException: If the parameter is None or not of the required type.
-    """
-    if param is None or not isinstance(param, required_type):
-        raise PayFortException(
-            f'verify_param failed: {param_name} is required and must be '
-            f'({required_type.__name__}), but got ({type(param).__name__})'
-        )
-
-
-def get_customer_name(cart: Cart) -> str:
-    """
-    Return the customer name for the given cart.
-
-    :param cart: The cart.
-    :return: The customer name.
-    """
-    verify_param(cart, 'cart', Cart)
-
-    return sanitize_text(
-        cart.user.get_full_name() or 'Name not set',
-        VALID_PATTERNS['customer_name'],
-        max_length=50,
-    )
-
-
-def get_merchant_reference(site_id: int, cart: Cart) -> str:
-    """
-    Return the merchant reference for the given cart.
-
-    :param site_id: The site ID.
-    :param cart: The cart.
-    :return: The merchant reference.
-    """
-    verify_param(site_id, 'site_id', int)
-    verify_param(cart, 'cart', Cart)
-
-    return f'{site_id}-{cart.id}'
-
-
-def get_course_id(item: CartItem) -> Optional[str]:
-    """Return the course ID."""
-    if item.catalogue_item.type == CatalogueItem.ItemType.PAID_COURSE:
-        try:
-            course = CourseOverview.objects.get(id=item.catalogue_item.item_ref_id)
-        except Exception as exc:
-            raise PayFortException(
-                f'Unable to get course from catalogue item of type "{CatalogueItem.ItemType.PAID_COURSE}" '
-                f'and ref_id: "{item.catalogue_item.item_ref_id}".'
-            ) from exc
-        return str(course.id)
-    raise PayFortException(f'Catalogue Item type: "{item.catalogue_item.type}" not supported.')
-
-
-def get_order_description(cart: Cart) -> str:
-    """
-    Return the order description for the given cart.
-
-    :param cart: The cart.
-    :return: The order description.
-    """
-
-    def _get_product_description(item: CartItem) -> str:
-        """Return the product description."""
-        result = get_course_id(item)
-        return result or '-'
-
-    verify_param(cart, 'cart', Cart)
-    description = ''
-    items = list(cart.items.all())
-    max_index = len(items) - 1
-
-    for index, item in enumerate(items):
-        description += f"{_get_product_description(item).replace(';', '_') or '-'}"
-        if index < max_index:
-            description += ' // '
-
-    return sanitize_text(
-        description,
-        VALID_PATTERNS['order_description'],
-        max_length=MAX_ORDER_DESCRIPTION_LENGTH,
-    )
 
 
 def get_signature(sha_phrase: str, sha_method: str, transaction_parameters: Dict[str, Any]) -> str:
