@@ -14,7 +14,7 @@ from django.utils.translation import gettext_lazy as _
 
 from zeitlabs_payments.exceptions import CartFulfillmentError, GatewayError, InavlidCartError
 from zeitlabs_payments.helpers import get_currency, get_language, get_merchant_reference, get_order_description
-from zeitlabs_payments.models import Cart, CatalogueItem, Transaction, WebhookEvent
+from zeitlabs_payments.models import Cart, CatalogueItem, Transaction, WebhookEvent, AuditLog
 
 logger = logging.getLogger(__name__)
 
@@ -168,6 +168,12 @@ class BaseProcessor:
 
         cart.status = Cart.Status.PAID
         cart.save(update_fields=['status'])
+        AuditLog.audit_log_cart_status_updated(
+            cart.user,
+            cart.id,
+            Cart.Status.PROCESSING,
+            Cart.Status.PAID,
+        )
         logger.info(f'Cart marked as PAID: {cart.id}')
 
     def fulfill_cart(self, cart: Cart) -> None:
@@ -188,13 +194,32 @@ class BaseProcessor:
                     f'Unsupported catalogue item type: {item.catalogue_item.type} '
                     f'for item {item.catalogue_item.id} in cart {cart.id}'
                 )
-                raise CartFulfillmentError('Unsupported catalogue item type')
+                AuditLog.objects.create(
+                    user=cart.user,
+                    action='CartFulfillmentError',
+                    gateway=self.SLUG,
+                    details=(
+                        f'Error during cart: {cart.id} fullfilment for item: {item.id}, catalogue_item:'
+                        f' {item.catalogue_item.id} due to unsupported type: {item.catalogue_item.type}.'
+                    )
+                )
+                raise CartFulfillmentError(f'Unsupported catalogue item type: {item.catalogue_item.type}')
 
             try:
                 course_mode = CourseMode.objects.get(sku=item.catalogue_item.sku)
             except CourseMode.DoesNotExist as exc:
                 logger.error(
                     f'CourseMode not found for SKU: {item.catalogue_item.sku} - Item ID: {item.id}'
+                )
+                AuditLog.objects.create(
+                    user=cart.user,
+                    action='CartFulfillmentError',
+                    gateway=self.SLUG,
+                    details=(
+                        f'Error during cart: {cart.id} fullfilment for item: {item.id}, catalogue_item:'
+                        f' {item.catalogue_item.id} due to invalid sku: {item.catalogue_item.sku} as'
+                        f'CourseMode does not exist for given sku and catalogue item type: {item.catalogue_item.type}.'
+                    )
                 )
                 raise CartFulfillmentError('CourseMode not found') from exc
 
@@ -204,6 +229,15 @@ class BaseProcessor:
                     course_mode.course.id,
                     mode=course_mode.mode_slug,
                 )
+                AuditLog.objects.create(
+                    user=cart.user,
+                    action='UserEnrolled',
+                    gateway=self.SLUG,
+                    details=(
+                        f'User enrolled to the course: {course_mode.course.id} with mode: {course_mode.mode_slug} '
+                        f'during cart: {cart.id} fullfilment for catalogue_item: {item.catalogue_item.id}.'
+                    )
+                )
                 logger.info(
                     f'User {cart.user.id} enrolled in course {course_mode.course.id} '
                     f'with mode {course_mode.mode_slug}'
@@ -212,5 +246,15 @@ class BaseProcessor:
                 logger.exception(
                     f'Unexpected error while enrolling user {cart.user.id} in course: '
                     f'{course_mode.course.id}. Item ID: {item.id}'
+                )
+                AuditLog.objects.create(
+                    user=cart.user,
+                    action='UserEnrolledError',
+                    gateway=self.SLUG,
+                    details=(
+                        f'Unable to complete user enrollment to course: {course_mode.course.id} with mode: '
+                        f'{course_mode.mode_slug} during cart: {cart.id} fullfilment for'
+                        f'catalogue_item: {item.catalogue_item.id}.'
+                    )
                 )
                 raise CartFulfillmentError('Unexpected enrollment error') from exc

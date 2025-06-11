@@ -50,6 +50,14 @@ class AuditLog(models.Model):
     details = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    @classmethod
+    def audit_log_cart_status_updated(cls, user, old_status, new_status):
+        cls.objects.create(
+            user=user,
+            action='CartStatusUpdated',
+            details=f'Status updated for Cart with id: {id} from: {old_status} to: {new_status}.'
+        )
+
 
 class Cart(models.Model):
     """Cart model."""

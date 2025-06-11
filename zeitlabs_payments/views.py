@@ -17,6 +17,7 @@ from rest_framework.views import APIView
 from zeitlabs_payments import models
 from zeitlabs_payments.providers.registry import PROCESSORS, get_processor
 from zeitlabs_payments.serializers import CartSerializer
+from zeitlabs_payments.exceptions import InavlidCartError
 
 logger = logging.getLogger(__name__)
 
@@ -87,8 +88,8 @@ class InitiatePaymentView(LoginRequiredMixin, View):
             return HttpResponseBadRequest(f'Error: {str(exc)}')
 
         try:
-            cart = models.Cart.objects.get(id=cart_id)
-        except models.Cart.DoesNotExist as exc:
+            cart = processor.get_cart(cart_id)
+        except InavlidCartError as exc:
             logger.error(f'Cart not found with id: {cart_id} - {exc}')
             return HttpResponseBadRequest(f'Error: {str(exc)}')
 
@@ -106,7 +107,20 @@ class InitiatePaymentView(LoginRequiredMixin, View):
 
         cart.status = models.Cart.Status.PROCESSING
         cart.save(update_fields=['status'])
+        models.AuditLog.audit_log_cart_status_updated(
+            cart.user,
+            cart.id,
+            models.Cart.Status.PENDING,
+            models.Cart.Status.PROCESSING,
+        )
         logger.info(f'Cart {cart.id} status updated to PROCESSING')
+
+        models.AuditLog.objects.create(
+            user=cart.user,
+            action='RedirectedToPaymentGatweway',
+            gateway=processor.SLUG,
+            details=f'Redirecting to {processor.SLUG} payment page for cart: {cart.id}.'
+        )
         return payment_view
 
 
@@ -132,9 +146,21 @@ class CartView(APIView):
         cart_ids = list(pending_carts.values_list('id', flat=True))
         updated_count = pending_carts.update(status=models.Cart.Status.CANCELLED)
         logger.debug(f'Cancelled {updated_count} previous pending carts for user {user} with IDs: {cart_ids}')
+        for id in cart_ids:
+            models.AuditLog.audit_log_cart_status_updated(
+                user,
+                id,
+                models.Cart.Status.PENDING,
+                models.Cart.Status.CANCELLED,
+            )
 
         cart = models.Cart.objects.create(user=user, status=models.Cart.Status.PENDING)
         logger.info(f'Created new pending cart {cart.id} for user {user}')
+        models.AuditLog.objects.create(
+            user=user,
+            action='CreatedCart',
+            details=f'Cart with id: {cart.id} is created.'
+        )
         models.CartItem.objects.create(
             cart=cart,
             catalogue_item=catalog_item,
@@ -142,6 +168,11 @@ class CartView(APIView):
             final_price=catalog_item.price,
         )
         logger.info(f'Added catalogue item {catalog_item.sku} to cart {cart.id}')
+        models.AuditLog.objects.create(
+            user=user,
+            action='AddedItemToCart',
+            details=f'Added catalogue item {catalog_item.sku} to the cart {cart.id}'
+        )
         return cart
 
     def get(self, request: Any) -> Response:
@@ -189,6 +220,11 @@ class CartView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        models.AuditLog.objects.create(
+            user=request.user,
+            action='InitiatedAddToCart',
+            details='User added product with sku: {sku_code} to the cart.'
+        )
         cart = self.create_cart(request.user, catalog_item)
         serializer = CartSerializer(cart, context={'request': request})
         logger.info(f'Cart created for user {request.user} with SKU {sku_code}')

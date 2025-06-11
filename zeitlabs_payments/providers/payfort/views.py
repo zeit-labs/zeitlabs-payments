@@ -10,7 +10,7 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
 from zeitlabs_payments.exceptions import CartFulfillmentError
-from zeitlabs_payments.models import Cart
+from zeitlabs_payments.models import Cart, AuditLog
 from zeitlabs_payments.providers.payfort.exceptions import PayFortException
 from zeitlabs_payments.providers.payfort.helpers import SUCCESS_STATUS, verify_response_format
 from zeitlabs_payments.providers.payfort.processor import PayFort
@@ -38,6 +38,11 @@ class PayfortFeedbackView(View):
         TODO: use audit log for everything including failed transaction.
         """
         data = request.POST
+        AuditLog.objects.create(
+            action='ReceivedPayfortDirectFeedback',
+            gateway=self.payment_processor.SLUG,
+            details=data
+        )
         if data.get('status') == SUCCESS_STATUS:
             verify_response_format(data)
             reference = data.get('merchant_reference')
@@ -48,6 +53,13 @@ class PayfortFeedbackView(View):
                     f'Cart with id: {cart.id} is not in {Cart.Status.PROCESSING} state. State found: {cart.status}'
                 )
             site = self.payment_processor.get_site(site_id_str)
+
+            AuditLog.objects.create(
+                user=cart.user,
+                action='SuccessPayfortResponse',
+                gateway=self.payment_processor.SLUG,
+                details=f'Success response is receieved for cart: {cart.id} and site: {site.id}.'
+            )
 
             with transaction.atomic():
                 logger.info('Starting transaction record creation for PayFort callback.')
@@ -69,4 +81,4 @@ class PayfortFeedbackView(View):
                     return render(request, 'zeitlabs_payments/payment_error.html')
         else:
             logger.warning(f'PayFort payment is not successful. Status: {data.get("status")}, Data: {data}')
-            return render(request, 'zeitlabs_payments/payment_unsuccessful.html')
+            return render(request, 'zeitlabs_payments/payment_pending.html')
