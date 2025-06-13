@@ -5,18 +5,16 @@ from typing import Any, Dict, Optional
 from urllib.parse import urljoin
 
 from django.conf import settings
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest
 from django.middleware.csrf import get_token
-from django.shortcuts import render
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 
-from zeitlabs_payments.helpers import get_currency, get_language
 from zeitlabs_payments.models import Cart
 from zeitlabs_payments.providers.base import BaseProcessor
 
-from .helpers import get_merchant_reference, get_order_description, get_signature
+from .helpers import get_signature
 
 logger = logging.getLogger(__name__)
 
@@ -64,17 +62,21 @@ class PayFort(BaseProcessor):
     ) -> dict:
         """
         Generate base parameters required for the transaction signature.
+
+        :param cart: The cart instance related to the transaction.
+        :param request: The HTTP request object.
+        :return: A dictionary of transaction parameters.
         """
+        base_params = super().get_transaction_parameters_base(cart, request)
+        user_email = base_params.pop('user_email', None)
+        order_reference = base_params.pop('order_reference', None)
         return {
+            **base_params,
             'command': 'PURCHASE',
             'access_code': self.access_code,
             'merchant_identifier': self.merchant_identifier,
-            'language': get_language(request),
-            'merchant_reference': get_merchant_reference(request.site.id, cart),
-            'amount': int(round(cart.total * 100, 0)),
-            'currency': get_currency(cart),
-            'customer_email': cart.user.email,
-            'order_description': get_order_description(cart),
+            'merchant_reference': order_reference,
+            'customer_email': user_email,
             'return_url': self.return_url
         }
 
@@ -112,29 +114,3 @@ class PayFort(BaseProcessor):
         })
 
         return transaction_parameters
-
-    def payment_view(
-        self,
-        cart: Cart,
-        request: Optional[HttpRequest] = None,
-        use_client_side_checkout: bool = False,
-        **kwargs: Any
-    ) -> HttpResponse:
-        """
-        Render the payment redirection view.
-
-        :param cart: The cart details
-        :param request: The HTTP request
-        :param use_client_side_checkout: Client-side flag (currently unused)
-        :param kwargs: Additional arguments
-        :return: Rendered HTML response to redirect to the payment gateway
-        """
-        transaction_parameters = self.get_transaction_parameters(
-            cart=cart,
-            request=request,
-            use_client_side_checkout=use_client_side_checkout,
-            **kwargs,
-        )
-        return render(request, 'zeitlabs_payments/processors/payfort.html', {
-            'transaction_parameters': transaction_parameters,
-        })
